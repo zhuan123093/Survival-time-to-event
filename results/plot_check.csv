@@ -1,0 +1,10 @@
+﻿figure,points,data_match,png_pixels_match,original_pdf_sha256_match
+introduction_CRE,84,True,True,True
+CRE_main,144,True,True,True
+CAR_main,120,True,True,True
+BRE_appendix,144,True,True,True
+CRE_with_ols,168,True,True,True
+BRE_with_ols,168,True,True,True
+CAR_with_ols,140,True,True,True
+sample_size_appendix,70,True,True,True
+gamma_CRE_appendix,96,True,True,True
