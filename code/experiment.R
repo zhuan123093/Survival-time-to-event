@@ -1,4 +1,4 @@
-# Exact current simulation streams: Gaussian/Gamma CRE/BRE, and selected CAR.
+# Generate Gaussian CRE/BRE, Gamma CRE, and stratified CAR data.
 generate_data <- function(trial, g) {
     n <- as.integer(g$n); car <- g$design == 'CAR'
     seed <- if (car) as.integer(90517L + 3000000L + ifelse(g$allocation == .5, 0L, 20000000L) + trial) else

@@ -1,4 +1,4 @@
-# Current result collection and independent recount; seven methods only.
+# Summarize simulation results or compare them with the saved summary.
 options(stringsAsFactors=FALSE)
 invisible(try(suppressWarnings(Sys.setlocale('LC_ALL','Chinese (Simplified)_China.utf8')),silent=TRUE))
 script<-sub('^--file=','',commandArgs()[grepl('^--file=',commandArgs())][1])
@@ -27,7 +27,7 @@ for(i in seq_len(nrow(groups))) {
 actual<-do.call(rbind,rows);stopifnot(nrow(actual)==700L)
 if(mode=='collect') {
   write.csv(actual,saved_path,row.names=FALSE)
-  cat('COLLECTED',nrow(actual),'current method settings.\n')
+  cat('COLLECTED',nrow(actual),'method settings.\n')
 }else {
   saved<-read.csv(saved_path)
 key<-function(x)paste(x$group,x$p,x$method,sep='|')

@@ -1,4 +1,4 @@
-# OLS/dof: the current fitted slopes and finite-sample multiplier.
+# OLS/dof: fitted slopes and finite-sample multiplier.
 
 krotka_gamma <- function(n1, n0, k) {
     n <- n1 + n0
@@ -9,7 +9,7 @@ krotka_gamma <- function(n1, n0, k) {
     df_part * vif_part
 }
 
-# Closed-form implementation used for the saved OLS and dof results.
+# Group-specific OLS adjustment and degrees-of-freedom correction.
 
 shared_robin <- function(X, A, O0, O1, der, stratum = NULL) {
     n <- length(A)
@@ -106,7 +106,7 @@ oracle_CAR_moments <- function() {
     do.call(rbind, rows)
 }
 
-# Symmetrized pair-kernel square, evaluated by the established low-rank identity.
+# Symmetrized pair-kernel square evaluated by a low-rank identity.
 
 bd_pair <- function(F, G, dense = FALSE) {
     m <- nrow(F)
@@ -126,7 +126,7 @@ bd_pair <- function(F, G, dense = FALSE) {
     z
 }
 
-# Only the current pooled CLOO, unit-weight PLOO and known-Sigma oracle.
+# Pooled CLOO, unit-weight PLOO and known-Sigma oracle.
 pooled_fit <- function(X, A, O0, O1, vlr, stratum = 1L, CAR = FALSE) {
     m <- nrow(X); p <- ncol(X); q <- mean(A); v <- q * (1 - q)
     pa <- ifelse(A == 1, q, 1 - q)

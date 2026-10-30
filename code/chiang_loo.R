@@ -1,4 +1,4 @@
-# Current intercept CF + Chiang mHC3; HC3 is an internal term of mHC3.
+# Intercept CF regression and Chiang mHC3 variance; HC3 is a component of mHC3.
 
 cmo_variance <- function(A, r, P) {
     n <- length(A)
@@ -63,7 +63,7 @@ cmo_dense_grid <- function(X, A, O0, O1, ps, keep = FALSE) {
     list(parts = do.call(rbind, rows), details = details)
 }
 
-# Same mHC3 at large n, plus the saved saturated-arm NA convention.
+# Low-rank mHC3 for larger samples; undefined saturated-arm variances remain NA.
 
 cmo_fast_variance <- function(A, r, Q) {
     n <- length(A)
@@ -192,7 +192,7 @@ cmo_grid <- function(X, A, O0, O1, ps, keep = FALSE) {
     list(parts = do.call(rbind, rows), details = details)
 }
 
-# Combine current LOO within strata, retaining the original between term.
+# Combine within-stratum LOO estimates and the between-stratum variance term.
 chiang_fit <- function (d, ps, keep = FALSE) 
 {
     ans <- NULL

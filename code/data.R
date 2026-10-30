@@ -1,4 +1,4 @@
-# Current data utilities: event-driven censoring, derived outcomes and log-rank.
+# Event-driven censoring, log-rank derived responses and log-rank test.
 
 administrative_censoring <- function(entry, event_time, cfg) {
     n <- length(entry)
@@ -15,7 +15,7 @@ administrative_censoring <- function(entry, event_time, cfg) {
     }
     gap <- cutoff - max(entry)
     if (!is.finite(gap) || gap <= 0) {
-        stop(sprintf(paste0("Administrative cutoff %.6f precedes/completes at last ", "entry %.6f. Stop and ask before changing the design."), 
+        stop(sprintf(paste0("Administrative cutoff %.6f precedes/completes at last ", "entry %.6f; cutoff must follow the last entry."),
             cutoff, max(entry)))
     }
     status <- as.integer(calendar_event <= cutoff)

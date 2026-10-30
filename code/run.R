@@ -1,4 +1,4 @@
-# Current seven methods only. No imports of historical scripts or parent data.
+# Run simulations or replay stored simulation records.
 options(stringsAsFactors = FALSE)
 invisible(try(suppressWarnings(Sys.setlocale('LC_ALL', 'Chinese (Simplified)_China.utf8')), silent = TRUE))
 Sys.setenv(OMP_NUM_THREADS = '1', OPENBLAS_NUM_THREADS = '1', MKL_NUM_THREADS = '1')

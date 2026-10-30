@@ -1,4 +1,4 @@
-"""Render the nine current figures from results/summary.csv; current layout only."""
+"""Render nine simulation figures and export their plotting data."""
 from pathlib import Path
 import argparse
 import json
@@ -86,7 +86,7 @@ def render():
     for name, values in p.groupby('figure', sort=False):
         values.to_csv(REC / (name + '.csv'), index=False)
     (FIG.parent / 'plot_check.json').write_text(json.dumps(layouts, indent=2))
-    print('Rendered 9 current figures; 1134 plotted values checked.')
+    print('Saved nine figures and their plotting data.')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
