@@ -1,0 +1,8 @@
+"set","check","error"
+"all","derived_score_bridge",0
+"p5","ploo_dense",2.16840434497101e-19
+"p5","cloo_dense",2.16840434497101e-19
+"p8","ploo_dense",2.77555756156289e-17
+"p8","cloo_dense",6.93889390390723e-18
+"p14","ploo_dense",2.77555756156289e-17
+"p14","cloo_dense",6.93889390390723e-18

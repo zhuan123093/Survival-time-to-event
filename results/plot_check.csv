@@ -1,4 +1,4 @@
-﻿figure,points,data_match,png_pixels_match,original_pdf_sha256_match
+figure,points,data_match,paper_pdf_sha256_match,png_pixels_match
 introduction_CRE,84,True,True,True
 CRE_main,144,True,True,True
 CAR_main,120,True,True,True

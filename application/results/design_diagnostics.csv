@@ -1,0 +1,4 @@
+"set","p","n","rank0","rank1","max_h","fields"
+"p5",5,434,6,6,0.0667992588637006,"cd40;preanti;cd80;age;wtkg"
+"p8",8,434,9,9,0.0912135371412052,"cd40;preanti;cd80;age;wtkg;karnof;symptom;gender"
+"p14",14,434,15,15,0.115641214552756,"cd40;preanti;cd80;age;wtkg;karnof;symptom;gender;hemo;homo;drugs;race;oprior;z30"

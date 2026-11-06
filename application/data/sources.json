@@ -1,0 +1,14 @@
+[
+  {
+    "path": "ACTG175.txt",
+    "url": "https://raw.githubusercontent.com/cran/speff2trial/9fa954e262daa0dd8d078d8a843537467f7603df/data/ACTG175.txt",
+    "sha256": "7b52e6b3701a1f24090ef0388f1c148d5286450f97276d9c8fbe611ce0c76779",
+    "bytes": 173361
+  },
+  {
+    "path": "ACTG175.Rd",
+    "url": "https://raw.githubusercontent.com/cran/speff2trial/9fa954e262daa0dd8d078d8a843537467f7603df/man/ACTG175.Rd",
+    "sha256": "fc0f6d57de57b07d14baa2e104a478b5923337c63430c7ceecd201054a5f7120",
+    "bytes": 3169
+  }
+]

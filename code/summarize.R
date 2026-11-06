@@ -8,7 +8,7 @@ dest<-data_dir
 mode<-if('--collect'%in%commandArgs(TRUE))'collect'else'verify'
 groups<-read.csv(file.path(root,'code/settings.csv'))
 saved_path<-file.path(data_dir,'summary.csv')
-methods<-c('lr','ols','dof','loo','cloo','ploo','oracle');rows<-list()
+methods<-c('lr','ols','dof','loo','cloo','ploo','oracle');rows<-list();component_rows<-list()
 for(i in seq_len(nrow(groups))) {
   x<-readRDS(file.path(data_dir,'raw',paste0(groups$id[i],'.rds')))
   g<-x$group;n<-g$n;B<-dim(x$raw)[1]
@@ -22,11 +22,18 @@ for(i in seq_len(nrow(groups))) {
       rate=rate,mcse=sqrt(rate*(1-rate)/nn),wilson_lower=mid-half,wilson_upper=mid+half,
       mean_rootn_u=sqrt(n)*mean(u[fu]),empirical_v=n*var(u[fu]),mean_v=mean(v[fv]),mean_v_ratio=mean(v[fv])/(n*var(u[fu])),
       median_v=median(v[fv]),q99_v=unname(quantile(v[fv],.99)),min_v=min(v[fv]),max_v=max(v[fv]),z_sd=sd(z))
+    if(m%in%c('cloo','ploo','oracle') && !is.null(x$pooled_components)) {
+      cp<-x$pooled_components[,p,m,]
+      stopifnot(max(abs(v-cp[,'I']-cp[,'II']-cp[,'between']))<1e-10)
+      component_rows[[length(component_rows)+1L]]<-data.frame(group=groups$id[i],p=as.integer(p),method=m,
+        mean_I=mean(cp[,'I']),mean_II=mean(cp[,'II']),mean_between=mean(cp[,'between']),min_I=min(cp[,'I']),min_II=min(cp[,'II']))
+    }
   }
 }
 actual<-do.call(rbind,rows);stopifnot(nrow(actual)==700L)
 if(mode=='collect') {
   write.csv(actual,saved_path,row.names=FALSE)
+  if(length(component_rows))write.csv(do.call(rbind,component_rows),file.path(dest,'pooled_variance_components.csv'),row.names=FALSE)
   cat('COLLECTED',nrow(actual),'method settings.\n')
 }else {
   saved<-read.csv(saved_path)

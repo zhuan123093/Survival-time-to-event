@@ -41,17 +41,21 @@ if (mode == 'replay') {
     for (i in seq_len(nrow(groups))) {
         g <- groups[i, ]; dest <- file.path(out, 'raw', paste0(g$id, '.rds'))
         if (file.exists(dest)) { cat('EXISTS', g$id, '\n'); next }
-        raw <- parts <- meta <- NULL
+        raw <- parts <- pooled_components <- meta <- NULL
         for (b in seq_len(B)) {
             fit <- compute_trial(b + g$offset, g)
             if (is.null(raw)) {
                 raw <- array(NA_real_, c(B, dim(fit$raw)), dimnames = c(list(as.character(seq_len(B))), dimnames(fit$raw)))
                 parts <- array(NA_real_, c(B, dim(fit$parts)), dimnames = c(list(as.character(seq_len(B))), dimnames(fit$parts)))
+                pooled_components <- array(NA_real_, c(B, dim(fit$pooled_components)),
+                    dimnames = c(list(as.character(seq_len(B))), dimnames(fit$pooled_components)))
                 meta <- matrix(NA_real_, B, length(fit$meta), dimnames = list(NULL, names(fit$meta)))
             }
-            raw[b, , ] <- fit$raw; parts[b, , ] <- fit$parts; meta[b, ] <- fit$meta
+            raw[b, , ] <- fit$raw; parts[b, , ] <- fit$parts; pooled_components[b, , , ] <- fit$pooled_components; meta[b, ] <- fit$meta
             if (b %% 1000L == 0L) { cat(g$id, b, '/', B, '\n'); flush.console() }
         }
-        saveRDS(list(group = g, raw = raw, parts = parts, meta = meta, offset = g$offset), dest, compress = FALSE)
+        connection <- xzfile(dest, open = 'wb', compression = 9)
+        tryCatch(saveRDS(list(group = g, raw = raw, parts = parts, pooled_components = pooled_components,
+            meta = meta, offset = g$offset), connection), finally = close(connection))
     }
 }

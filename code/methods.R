@@ -126,38 +126,71 @@ bd_pair <- function(F, G, dense = FALSE) {
     z
 }
 
-# Pooled CLOO, unit-weight PLOO and known-Sigma oracle.
-pooled_fit <- function(X, A, O0, O1, vlr, stratum = 1L, CAR = FALSE) {
+# Ordered off-diagonal sum of (O_i1+O_i0) C_ij C_ji (O_j1+O_j0), C = Z X'.
+off_diagonal_product <- function(Z, X, response) {
+    diagonal <- rowSums(Z * X)
+    moment <- crossprod(X, Z * response)
+    sum(moment * t(moment)) - sum((diagonal * response)^2)
+}
+
+# Components I and II follow the displayed PLOO/CLOO/oracle formulas.
+# Gram matrices and response moments both use divisor n; their scales cancel
+# in the fitted sample weights. Known-Sigma weights retain the divisor n.
+pooled_fit <- function(X, A, O0, O1, vlr, stratum = 1L, CAR = FALSE,
+                       methods = c('cloo', 'ploo', 'oracle')) {
     m <- nrow(X); p <- ncol(X); q <- mean(A); v <- q * (1 - q)
     pa <- ifelse(A == 1, q, 1 - q)
-    yy <- ifelse(A == 1, O1, O0); sig <- O0 + O1; tt <- O1/q - O0/(1 - q)
-    inverse <- mf_inverse(X); U <- X %*% inverse$W
-    h <- rowSums(U * X)
-    C <- U
-    safe <- inverse$rank == p & (1 - h) > 1e-6
-    C[safe, ] <- sweep(C[safe, , drop = FALSE], 1, 1 - h[safe], '/')
-    for (i in which(!safe)) C[i, ] <- drop(X[i, , drop = FALSE] %*% mf_inverse(X[-i, , drop = FALSE])$W)
+    yy <- ifelse(A == 1, O1, O0); sig <- O0 + O1
+    rows <- list()
+    if (any(c('cloo', 'ploo') %in% methods)) {
+        inverse <- mf_inverse(X); U <- X %*% inverse$W
+        h <- rowSums(U * X)
+        C <- U
+        safe <- inverse$rank == p & (1 - h) > 1e-6
+        C[safe, ] <- sweep(C[safe, , drop = FALSE], 1, 1 - h[safe], '/')
+        for (i in which(!safe)) C[i, ] <- drop(X[i, , drop = FALSE] %*% mf_inverse(X[-i, , drop = FALSE])$W)
+        rows <- list(cloo = C, ploo = U)
+    }
     sigma <- rep(1, p)
     if (CAR && p >= 2L) sigma[2] <- oracle_CAR_moments()$variance[stratum]
-    oracle <- sweep(X, 2, (m - 1) * sigma, '/')
-    rows <- list(cloo = C, ploo = U, oracle = oracle)
+    oracle <- sweep(X, 2, m * sigma, '/')
+    rows$oracle <- oracle
+    rows <- rows[methods]
     score <- drop(crossprod(X, yy/pa))
-    out <- matrix(0, 3, 2, dimnames = list(names(rows), c('u', 'v')))
+    out <- matrix(0, length(rows), 4, dimnames = list(names(rows), c('u', 'I', 'II', 'v')))
     for (method in names(rows)) {
         Z <- rows[[method]]; hz <- rowSums(Z * X)
         pred <- drop(Z %*% score) - hz * yy/pa
         phi <- A * O1 - (1 - A) * O0 + (q - A) * pred
-        resid <- sig - (drop(Z %*% crossprod(X, sig)) - hz * sig)
-        first <- vlr + v/m * sum(resid^2 - sig^2)
-        second <- v^2 * bd_pair(Z, X * tt)
-        out[method, ] <- c(mean(phi), first + second)
+        off_prediction <- drop(Z %*% crossprod(X, sig)) - hz * sig
+        product_sum <- off_diagonal_product(Z, X, sig)
+        if (method == 'ploo') {
+            # I: (1+h_i+h_j+H_ij) H_ij times the two endpoint response sums.
+            ordered_sum <- sum((1 + 2 * h) * sig * off_prediction) + product_sum
+        } else if (method == 'cloo') {
+            # C_ij = H_ij/(1-h_i) on full-rank deleted designs. The three
+            # contributions are 2 C_ij, -sum_l C_li C_lj, and C_ij C_ji.
+            column_squares <- rowSums((X %*% crossprod(Z)) * X) - hz^2
+            triple_sum <- sum(off_prediction^2) - sum(sig^2 * column_squares)
+            ordered_sum <- 2 * sum(sig * off_prediction) - triple_sum + product_sum
+        } else {
+            # I: (1+H_ij^oracle) H_ij^oracle, omitting the 2/n correction.
+            ordered_sum <- sum(sig * off_prediction) + product_sum
+        }
+        I <- vlr - v/m * ordered_sum
+        # II: arm-weighted pair squares. For CLOO, the symmetric pair is
+        # H_ij {O_i/(1-h_j) + O_j/(1-h_i)}. bd_pair sums each pair once / n.
+        II <- (1 - q) * bd_pair(Z, X * O1) + q * bd_pair(Z, X * O0)
+        out[method, ] <- c(mean(phi), I, II, I + II)
     }
     out
 }
 
-pooled_grid <- function(d, ps) {
-    n <- length(d$A); ans <- array(0, c(length(ps), 3, 2),
-        dimnames = list(as.character(ps), c('cloo', 'ploo', 'oracle'), c('u', 'v')))
+pooled_grid <- function(d, ps, methods = c('cloo', 'ploo', 'oracle')) {
+    n <- length(d$A); ans <- array(0, c(length(ps), length(methods), 2),
+        dimnames = list(as.character(ps), methods, c('u', 'v')))
+    components <- array(0, c(length(ps), length(methods), 3),
+        dimnames = list(as.character(ps), methods, c('I', 'II', 'between')))
     means <- weights <- numeric()
     for (k in unique(as.integer(d$stratum))) {
         ii <- which(as.integer(d$stratum) == k); m <- length(ii); A <- d$A[ii]; q <- mean(A)
@@ -165,12 +198,16 @@ pooled_grid <- function(d, ps) {
         means <- c(means, q * mean(der$O1[A == 1]) - (1 - q) * mean(der$O0[A == 0]))
         weights <- c(weights, m/n)
         Xc <- scale(d$X[ii, seq_len(max(ps)), drop = FALSE], TRUE, FALSE)
-        for (j in seq_along(ps)) ans[j, , ] <- ans[j, , ] + m/n *
-            pooled_fit(Xc[, seq_len(ps[j]), drop = FALSE], A, der$O0, der$O1,
-                der$information/m, k, length(unique(d$stratum)) > 1L)
+        for (j in seq_along(ps)) {
+            fit <- pooled_fit(Xc[, seq_len(ps[j]), drop = FALSE], A, der$O0, der$O1,
+                der$information/m, k, length(unique(d$stratum)) > 1L, methods)
+            ans[j, , ] <- ans[j, , ] + m/n * fit[, c('u', 'v')]
+            components[j, , c('I', 'II')] <- components[j, , c('I', 'II')] + m/n * fit[, c('I', 'II')]
+        }
     }
     between <- sum(weights * (means - sum(weights * means))^2)
     ans[, , 'v'] <- ans[, , 'v'] + between
-    list(parts = ans, between = between)
+    components[, , 'between'] <- between
+    list(parts = ans, components = components, between = between)
 }
 

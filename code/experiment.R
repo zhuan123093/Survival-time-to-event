@@ -56,6 +56,6 @@ compute_trial <- function(trial, g) {
     }
     raw <- do.call(rbind, rows); rownames(raw) <- as.character(ps)
     stopifnot(sum(d$status) == ceiling(.7 * n), d$entry_gap > 0)
-    list(raw = raw, parts = loo$parts, between = pooled$between,
+    list(raw = raw, parts = loo$parts, pooled_components = pooled$components, between = pooled$between,
         meta = c(seed = d$seed, n1 = sum(d$A), events = sum(d$status), cutoff = d$cutoff))
 }
