@@ -1,10 +1,10 @@
-# ACTG175 数据来源
+# ACTG175 Data Sources
 
-`ACTG175.txt` 是 R 包 `speff2trial` 提供的2139人、27变量数据，原文件直接保留。`ACTG175.Rd` 为同一版本的变量和终点说明。来源固定在 CRAN 镜像提交 `9fa954e262daa0dd8d078d8a843537467f7603df`：
+The `ACTG175.txt` file comes from the R package `speff2trial` and contains 2,139 participants and 27 variables. The accompanying `ACTG175.Rd` file documents the variables and endpoint. Both files come from commit `9fa954e262daa0dd8d078d8a843537467f7603df` in the CRAN mirror.
 
-- [数据文件](https://github.com/cran/speff2trial/blob/9fa954e262daa0dd8d078d8a843537467f7603df/data/ACTG175.txt)
-- [变量说明](https://github.com/cran/speff2trial/blob/9fa954e262daa0dd8d078d8a843537467f7603df/man/ACTG175.Rd)
+- [ACTG175 data file](https://github.com/cran/speff2trial/blob/9fa954e262daa0dd8d078d8a843537467f7603df/data/ACTG175.txt)
+- [ACTG175 variable documentation](https://github.com/cran/speff2trial/blob/9fa954e262daa0dd8d078d8a843537467f7603df/man/ACTG175.Rd)
 
-`sources.json` 记录各原文件的下载地址、大小和SHA256。分析脚本从完整数据选取 Z3 中的两个单药治疗臂；入选行及受试者编号写入 `application/results/sample_index.csv`。
+The `sources.json` file records the download URLs, file sizes, and SHA-256 checksums. The analysis script selects the two monotherapy arms in Z3 from the full dataset and writes the selected source rows and participant IDs to [`sample_index.csv`](../results/sample_index.csv).
 
-临床试验出处：Hammer et al. (1996), *New England Journal of Medicine*, 335(15):1081–1090, [doi:10.1056/NEJM199610103351501](https://doi.org/10.1056/NEJM199610103351501)。
+Hammer et al. (1996) reported the trial in the *New England Journal of Medicine*, 335(15), 1081–1090. [Trial report](https://doi.org/10.1056/NEJM199610103351501)

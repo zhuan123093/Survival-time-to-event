@@ -1,92 +1,79 @@
-# 协变量调整 log-rank 检验
+# Covariate-Adjusted Log-Rank Tests
 
-本项目比较协变量调整 log-rank 检验在完全随机分配（CRE）、Bernoulli分配（BRE）和分层随机分配（CAR）下的表现，提供七种方法的模拟代码、结果及九张实验图，并提供 ACTG175 Z3 实际应用的数据、六方法分析代码和结果表。
+This repository contains the code and results for a simulation study of covariate-adjusted log-rank tests and a reanalysis of the ACTG175 Z3 subgroup. The simulations compare seven tests in completely randomized experiments (CRE), Bernoulli randomized experiments (BRE), and stratified covariate-adaptive randomization (CAR). The ACTG175 application compares six tests and reproduces the application table in the paper.
 
-```text
-Survival-logrank-reproducibility/
-├── README.md                 # 本文件：代码用途、数据说明、运行命令
-├── INDEX.csv                 # 九图逐一对应图片、绘图CSV、原始结果
-├── MANIFEST.csv              # 文件大小和SHA256
-├── code/
-│   ├── settings.csv          # 24组设置：n、CRE/BRE/CAR、H0/H1、比例、p、试验偏移
-│   ├── data.R                # 70%事件删失、风险集派生响应、标准log-rank
-│   ├── methods.R             # OLS/dof、CLOO/PLOO/oracle及共用矩阵运算
-│   ├── chiang_loo.R          # 含截距CF分子、Chiang mHC3、饱和组及大样本计算
-│   ├── experiment.R          # 资料生成、随机种子、七方法单次计算
-│   ├── run.R                 # 按设置运行，或重放已保存记录核对代码
-│   ├── summarize.R           # 从24份raw收集汇总，或核对保存的summary
-│   └── plot.py               # 绘制九张实验图，导出各图CSV
-├── results/
-│   ├── raw/                  # 24份RDS，每组10000次模拟的逐次统计量
-│   ├── summary.csv           # 700个方法设置的汇总
-│   ├── variance_components.csv # LOO方差分项
-│   ├── pooled_variance_components.csv # CLOO/PLOO/oracle的I、II和层间项
-│   ├── invalid_trials.csv    # 七种方法的无效统计量记录
-│   ├── figures/              # 九张图的PDF和PNG
-│   ├── plot_data/            # 每图一份CSV，共1134个绘图点
-│   ├── code_check.csv        # 重放记录与保存结果的比较
-│   ├── summary_check.csv     # raw重计与summary逐列核对
-│   └── plot_check.csv        # 绘图数据和图片检查
-└── application/
-    ├── README.md             # 亚组、终点、调整变量及运行方法
-    ├── data/                 # ACTG175完整数据、原始变量说明、来源清单
-    ├── code/run.R            # Z3、p=5/8/14、六种检验及表格导出
-    ├── results/              # 精确统计量、样本清单、CSV与LaTeX表
-    └── reference.bib         # Hammer et al. (1996)原试验词条
-```
+## Repository layout
 
-## 代码对应关系
+| Path | Contents |
+| --- | --- |
+| `INDEX.csv` | Links each of the nine figures to its plotting data and simulation results |
+| `MANIFEST.csv` | File sizes and SHA-256 checksums |
+| `code/settings.csv` | The 24 simulation settings, including sample sizes, designs, hypotheses, allocation ratios, adjustment dimensions, and replicate offsets |
+| `code/data.R` | Event censoring, risk-set derived outcomes, and the unadjusted log-rank test |
+| `code/methods.R` | OLS, degrees-of-freedom correction, CLOO, PLOO, oracle, and shared matrix calculations |
+| `code/chiang_loo.R` | The cross-fitted numerator with intercepts and the Chiang mHC3 variance estimator |
+| `code/experiment.R`, `code/run.R` | Data generation, random seeds, and execution or replay of simulation replicates |
+| `code/summarize.R`, `code/plot.py` | Simulation summaries, figures, and plotting data |
+| `results/raw/` | 24 RDS files with replicate-level results, with 10,000 replicates per setting |
+| `results/summary.csv` | 700 rows of simulation summaries |
+| `results/variance_components.csv`, `results/pooled_variance_components.csv` | Variance components for LOO and for CLOO, PLOO, and oracle |
+| `results/invalid_trials.csv` | Invalid replicates and their test numerators and variances |
+| `results/figures/`, `results/plot_data/` | Nine figures in PDF and PNG and the CSV data used to plot them |
+| `results/code_check.csv`, `results/summary_check.csv`, `results/plot_check.csv` | Comparisons of replayed replicates, regenerated summaries, and plotted values with the saved results |
+| `application/` | ACTG175 data and variable documentation, analysis code, results, and the original trial citation |
 
-`run.R` → `experiment.R`：按 `settings.csv` 生成资料，然后调用 `data.R` 计算风险集响应，调用 `methods.R` 和 `chiang_loo.R` 计算七种方法。全部依赖在本目录内。
+## Simulation design
 
-`summarize.R` → `results/raw/` → `summary.csv`；`plot.py` → `summary.csv` → 九张图片及各图CSV。
+The seven tests are `lr`, `ols`, `dof`, `loo`, `cloo`, `ploo`, and `oracle`. The standard LOO test uses a cross-fitted numerator based on within-arm regressions with intercepts and the Chiang mHC3 variance estimator. The adjustment dimension `p` excludes the intercept.
 
-|图片文件名（PDF/PNG同名）|内容|
-|---|---|
-|`introduction_CRE`|引言：CRE七方法比较|
-|`CRE_main`|正文：CRE|
-|`CAR_main`|正文：CAR|
-|`BRE_appendix`|附录：BRE|
-|`CRE_with_ols`|附录：CRE含OLS|
-|`BRE_with_ols`|附录：BRE含OLS|
-|`CAR_with_ols`|附录：CAR含OLS|
-|`sample_size_appendix`|附录：固定p=20、增加n|
-|`gamma_CRE_appendix`|附录：Gamma协变量CRE|
+In the stratified design, the first ten covariate coefficients are −0.4, 0.5, and 0.2 in the three strata, respectively. The tests are computed within strata and retain the between-stratum variance term. Sample Gram matrices and regression cross-moments use `n` for normalization. PLOO uses the projection weights `H`. The oracle uses the known population covariance with weights `H_ij^oracle = X_i' Sigma^(-1) X_j / n`. The CLOO, PLOO, and oracle variance calculations separate components I and II. The oracle uses the off-diagonal factor `(1 + H_ij^oracle) H_ij^oracle` in component I.
 
-## 模拟设置和数据
+Under the alternative, the treatment hazard ratio is `exp(-0.5)`. Follow-up ends at the 70% event cutoff. CRE and BRE use replicate IDs 1–10,000 and CAR uses 20,001–30,000. The complete settings are in [`code/settings.csv`](code/settings.csv).
 
-七种方法为lr、ols、dof、loo、cloo、ploo、oracle。标准LOO为组内含截距CF分子与Chiang mHC3；p不计截距。CAR三层前10个系数分别为-0.4、0.5、0.2，层内计算并保留原层间项。样本Gram矩阵和回归交叉矩统一用n归一化，PLOO使用投影权重H；oracle使用已知总体协方差，权重为X_i' Sigma^{-1} X_j/n。CLOO/PLOO/oracle的方差按I、II分别计算，oracle的第一项采用(1+H_ij^oracle)H_ij^oracle。全部H1使用HR=exp(-0.5)，70%事件截止；非CAR试验1–10000，CAR试验20001–30000。完整设置见 `code/settings.csv`。
+## Simulation results
 
-`raw/` 中 `n100_CRE_1to1_H0.rds` 对应Gaussian CRE、n=100、1:1、H0；BRE/2to1/H1类推。`n200/300/500/1000_CRE_1to1_*.rds` 为样本量实验，`gamma_n100_CRE_*.rds` 为Gamma实验，`sign_low_*.rds` 为CAR。
+In `results/raw/`, `n100_CRE_1to1_H0.rds` contains the Gaussian CRE results for `n = 100` with 1:1 allocation under the null. The `n200`, `n300`, `n500`, and `n1000` files cover the sample-size experiment. The `gamma_n100_CRE_*` files cover the Gamma covariate experiment, and the `sign_low_*` files cover the stratified design.
 
-RDS采用xz无损压缩，可直接用 `readRDS()` 读取。`raw[试验,p,字段]` 保存各方法的u分子、v方差及部分标准化统计量；`parts[试验,p,分项]` 保存LOO分项。完整X和生存资料由 `experiment.R` 的种子规则重放。
+Use `readRDS()` to load a replicate-level results file. The `raw[replicate, p, field]` array stores the test numerators, variances, and selected standardized statistics. The `parts[replicate, p, component]` array stores the LOO variance components. The seed rules in `code/experiment.R` reproduce the covariates and survival data.
 
-`pooled_components[试验,p,方法,分项]` 保存CLOO/PLOO/oracle的I、II和between；总方差为三项之和。CRE/BRE的between为0，CAR保留层间项。对应均值汇总见 `pooled_variance_components.csv`。
+The `pooled_components[replicate, p, method, component]` array stores I, II, and the between-stratum term for CLOO, PLOO, and oracle. Their sum is the variance estimate. The between-stratum term is zero for CRE and BRE. The component averages are in [`results/pooled_variance_components.csv`](results/pooled_variance_components.csv).
 
-`summary.csv` 一行对应group × p × method，`rate` 是拒绝率（0–1），`valid/invalid` 是实际有效/失效次数。BRE 2:1高维保留1536个未定义mHC3方差；拒绝率按各方法有效次数计算。每图CSV的 `value` 是画出的拒绝率。
+Each row of `results/summary.csv` represents one simulation setting, adjustment dimension, and method. The columns `rate`, `valid`, and `invalid` give the rejection proportion and the counts of valid and invalid replicates. In the higher-dimensional BRE settings with 2:1 allocation, 1,536 mHC3 variances are undefined. Rejection rates use each method's valid replicates. The `value` column in each plotting CSV gives the rejection rate shown in the figure.
 
-## 使用
+| Figure stem in `results/figures/` | Content |
+| --- | --- |
+| `introduction_CRE` | Seven-method CRE comparison in the introduction |
+| `CRE_main` | CRE simulations in the main text |
+| `CAR_main` | Stratified randomization simulations in the main text |
+| `BRE_appendix` | BRE simulations in the appendix |
+| `CRE_with_ols` | CRE simulations including OLS |
+| `BRE_with_ols` | BRE simulations including OLS |
+| `CAR_with_ols` | Stratified randomization simulations including OLS |
+| `sample_size_appendix` | Sample-size experiment at `p = 20` |
+| `gamma_CRE_appendix` | CRE simulations with Gamma covariates |
 
-从本目录运行。R需要MASS和survival；Python需要numpy、pandas、matplotlib。
+## Reproduce the results
 
-```powershell
-# 绘制九张图
+Run the following commands from the repository root. The R scripts use `MASS` and `survival`. The plotting script uses `numpy`, `pandas`, and `matplotlib`.
+
+~~~sh
+# Regenerate the nine simulation figures.
 python code/plot.py
 
-# 从保存raw核对全部700行汇总
+# Check the summary against the saved replicate-level results.
 Rscript --vanilla code/summarize.R
 
-# 重放保存的记录
+# Replay selected saved replicates.
 Rscript --vanilla code/run.R --mode=replay
 
-# 运行某一组；已有同名raw时跳过，job见settings.csv
+# Run setting 1 from code/settings.csv. The runner skips existing output.
 Rscript --vanilla code/run.R --mode=run --job=1 --B=10000
 
-# 全部24组完成后，重新收集summary
+# Rebuild the summary after all 24 simulation settings are available.
 Rscript --vanilla code/summarize.R --collect
 
-# ACTG175 Z3应用：复算六方法及论文结果表
+# Reproduce the ACTG175 Z3 application table.
 Rscript --vanilla application/code/run.R
-```
+~~~
 
-实际应用的筛选条件、变量编码和输出字段见 [application/README.md](application/README.md)。数据已包含在仓库中，复算不需要连接外部数据服务。
+The ACTG175 data are included in the repository. The subgroup definition, adjustment sets, and output files are described in the [application README](application/README.md).
